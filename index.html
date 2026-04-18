@@ -113,7 +113,6 @@ body { background: linear-gradient(180deg, #7ed8ff 0%, #92b7ff 40%, #a881ff 100%
       <div class="song-picker-panel" id="songPickerPanel">
         <select class="song-select" id="songSelect" size="8" onchange="applySelectedSong()"></select>
       </div>
-      <div class="progress" id="progress"></div>
     </div>
   </div>
   <div class="playfield">
@@ -279,14 +278,6 @@ function buildPianoAndLanes() {
   });
 }
 function renderProgress() {
-  const el = document.getElementById('progress'); el.innerHTML = '';
-  currentSong().notes.forEach((noteIndex, idx) => {
-    const pill = document.createElement('div'); pill.className = 'pill';
-    if (idx < progressIndex) pill.classList.add('done');
-    if (idx === progressIndex) pill.classList.add('current');
-    if (missFlash && idx === progressIndex) pill.classList.add('miss');
-    pill.textContent = NOTES[noteIndex].label; el.appendChild(pill);
-  });
   updateVerseDisplay();
 }
 function setMode(next) {
