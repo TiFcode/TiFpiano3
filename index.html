@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>TiFpiano2 🎹</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif; }
+body { background: linear-gradient(180deg, #7ed8ff 0%, #92b7ff 40%, #a881ff 100%); user-select: none; -webkit-user-select: none; }
+.scene { position: relative; width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+.cloud { position: absolute; background: rgba(255,255,255,.9); border-radius: 999px; filter: drop-shadow(0 8px 10px rgba(0,0,0,.08)); }
+.cloud::before, .cloud::after { content: ''; position: absolute; background: inherit; border-radius: inherit; }
+.cloud.c1 { width: 118px; height: 40px; top: 22px; left: 18px; }
+.cloud.c1::before { width: 48px; height: 48px; left: 12px; top: -16px; }
+.cloud.c1::after { width: 56px; height: 56px; right: 10px; top: -22px; }
+.cloud.c2 { width: 108px; height: 36px; top: 54px; right: 18px; }
+.cloud.c2::before { width: 42px; height: 42px; left: 12px; top: -16px; }
+.cloud.c2::after { width: 48px; height: 48px; right: 12px; top: -18px; }
+.topbar { position: relative; z-index: 5; text-align: center; padding: 14px 12px 8px; }
+.topbar h1 { color: white; font-size: clamp(1.9rem, 5vw, 2.9rem); text-shadow: 0 4px 14px rgba(63,46,144,.3); }
+.topbar p { color: rgba(255,255,255,.96); margin-top: 4px; font-weight: 800; }
+.controls { position: relative; z-index: 5; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 8px 12px 8px; }
+.btn { border: none; border-radius: 999px; padding: 11px 16px; font-weight: 900; background: rgba(255,255,255,.92); color: #5c3c90; box-shadow: 0 4px 12px rgba(0,0,0,.08); cursor: pointer; }
+.btn.primary, .btn.active { background: linear-gradient(135deg, #ffc64d, #ff81aa); color: white; }
+.song-picker-panel { margin-top: 10px; display: none; gap: 8px; flex-wrap: wrap; align-items: center; }
+.song-picker-panel.show { display: flex; }
+.song-select {
+  flex: 1 1 320px;
+  min-width: 220px;
+  border: none;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-weight: 800;
+  color: #493c91;
+  background: rgba(255,255,255,.95);
+}
+.status { position: relative; z-index: 5; display: flex; justify-content: center; padding: 0 12px 10px; }
+.status-card { background: rgba(255,255,255,.84); border: 3px solid rgba(255,255,255,.6); border-radius: 24px; box-shadow: 0 10px 24px rgba(66,50,134,.14); width: min(980px, calc(100vw - 24px)); padding: 12px 16px; }
+.song-title { font-weight: 900; color: #493c91; font-size: clamp(1rem, 2.3vw, 1.2rem); }
+.hint { margin-top: 6px; color: #39506d; font-weight: 700; min-height: 1.4em; }
+.progress { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.pill { min-width: 38px; height: 38px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; background: #edf4ff; border: 2px solid #d7e8ff; color: #5243a0; }
+.pill.done { background: #9be88e; border-color: #59c76a; color: #245f30; }
+.pill.current { background: #ffe28d; border-color: #ffbf47; transform: scale(1.08); box-shadow: 0 0 0 5px rgba(255,191,71,.18); }
+.pill.miss { background: #ffbbbb; border-color: #ff7e7e; }
+.playfield { position: relative; flex: 1; min-height: 0; width: min(980px, calc(100vw - 10px)); margin: 0 auto; display: flex; flex-direction: column; }
+.note-area { position: relative; flex: 1; min-height: 180px; overflow: hidden; border-radius: 28px 28px 14px 14px; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.03)), linear-gradient(180deg, rgba(87,78,185,.14), rgba(83,173,255,.06)); }
+.white-lanes, .black-lanes { position: absolute; left: 0; right: 0; display: flex; }
+.white-lanes { inset: 0 0 0 0; gap: 4px; padding: 0 8px; }
+.black-lanes { top: 0; height: 70%; pointer-events: none; }
+.lane { position: relative; overflow: visible; }
+.white-lane { flex: 1; background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02)); border-left: 1px solid rgba(255,255,255,.2); border-right: 1px solid rgba(255,255,255,.14); }
+.black-lane { position: absolute; width: 9.2%; max-width: 86px; min-width: 34px; transform: translateX(-50%); height: 100%; background: linear-gradient(180deg, rgba(20,20,28,.22), rgba(20,20,28,.04)); border-left: 1px solid rgba(255,255,255,.08); border-right: 1px solid rgba(255,255,255,.06); }
+.target-line { position: absolute; left: 8px; right: 8px; bottom: 12px; height: 10px; border-radius: 999px; background: rgba(255,255,255,.58); box-shadow: 0 0 18px rgba(255,255,255,.45); }
+.falling-note { position: absolute; left: 50%; transform: translateX(-50%); width: calc(100% - 8px); min-width: 28px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; text-shadow: 0 1px 2px rgba(0,0,0,.25); box-shadow: 0 10px 18px rgba(0,0,0,.15), inset 0 4px 10px rgba(255,255,255,.18); }
+.falling-note.waiting { box-shadow: 0 0 0 5px rgba(255,255,255,.18), 0 10px 20px rgba(0,0,0,.15), inset 0 4px 10px rgba(255,255,255,.18); }
+.piano-shell { position: relative; z-index: 4; margin-top: -4px; background: linear-gradient(180deg, #ff74ac 0%, #ff8c56 100%); border-radius: 30px 30px 0 0; padding: 14px 12px 14px; border: 6px solid rgba(255,255,255,.28); box-shadow: 0 -8px 18px rgba(58,44,124,.14), 0 16px 36px rgba(58,44,124,.22); }
+.brand-row { display: flex; justify-content: space-between; gap: 12px; color: white; font-weight: 900; margin-bottom: 12px; }
+.brand-left { font-size: clamp(1rem, 2.4vw, 1.25rem); }
+.brand-right { font-size: clamp(.82rem, 1.9vw, .95rem); opacity: .96; }
+.keyboard { position: relative; height: min(28vh, 220px); }
+.white-keys { position: absolute; inset: 0; display: flex; gap: 4px; }
+.white-key { flex: 1; position: relative; border: 1px solid #cfcfcf; border-bottom: 7px solid #b4b4b4; border-radius: 0 0 18px 18px; background: linear-gradient(180deg, #ffffff 0%, #f7f7f7 78%, #ececec 100%); box-shadow: inset 0 -8px 0 rgba(0,0,0,.04), 0 5px 0 rgba(0,0,0,.08); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; cursor: pointer; transition: transform .05s ease, box-shadow .14s ease, background .14s ease; }
+.white-key.active-window { background: linear-gradient(180deg, #fffef7 0%, #fff2b8 55%, #ffd84d 100%); box-shadow: inset 0 -8px 0 rgba(0,0,0,.04), 0 0 0 7px rgba(255,223,90,.5), 0 0 32px rgba(255,234,130,.95), 0 0 56px rgba(255,221,77,.75), 0 5px 0 rgba(0,0,0,.08); }
+.white-key.pressed { transform: translateY(3px); }
+.black-keys { position: absolute; inset: 0; pointer-events: none; }
+.black-key { position: absolute; top: 0; width: 9.2%; max-width: 86px; min-width: 34px; height: 62%; transform: translateX(-50%); border-radius: 0 0 12px 12px; background: linear-gradient(180deg, #33363d 0%, #111318 78%, #000000 100%); border: 1px solid #050505; border-bottom: 5px solid #000; box-shadow: inset 0 -6px 0 rgba(255,255,255,.04), 0 5px 10px rgba(0,0,0,.35); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; color: rgba(255,255,255,.8); pointer-events: auto; cursor: pointer; transition: transform .05s ease, box-shadow .14s ease, background .14s ease; }
+.black-key.active-window { background: linear-gradient(180deg, #6d7380 0%, #262a33 55%, #0a0b0f 100%); box-shadow: inset 0 -6px 0 rgba(255,255,255,.05), 0 0 0 6px rgba(255,223,90,.38), 0 0 28px rgba(255,234,130,.85), 0 0 46px rgba(255,221,77,.55), 0 5px 10px rgba(0,0,0,.35); }
+.black-key.pressed { transform: translateX(-50%) translateY(3px); }
+.key-label { font-size: clamp(.68rem, 1.6vw, .9rem); font-weight: 900; user-select: none; }
+.spark { position: fixed; pointer-events: none; z-index: 30; font-size: 1.3rem; animation: fly 850ms ease-out forwards; }
+@keyframes fly { 0% { opacity: 1; transform: translateY(0) scale(.8) rotate(0deg); } 100% { opacity: 0; transform: translateY(-76px) scale(1.35) rotate(16deg); } }
+@media (max-width: 760px) { .playfield { width: calc(100vw - 8px); } .status-card { width: 100%; } .note-area { border-radius: 22px 22px 12px 12px; } .keyboard { height: min(26vh, 190px); } }
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="topbar">
+    <h1>🎹 TiFpiano2</h1>
+    <p>Learn mode waits at the keyboard</p>
+  </div>
+  <div class="controls">
+    <button class="btn active" id="mode-song" onclick="setMode('song')">🌟 Learn Song</button>
+    <button class="btn" id="mode-free" onclick="setMode('free')">🎵 Free Play</button>
+    <button class="btn" onclick="toggleSongPicker()">🎼 Select Song</button>
+    <button class="btn primary" onclick="startSong()">▶️ Start</button>
+    <button class="btn" onclick="stopSong()">⏹️ Stop</button>
+    <button class="btn" onclick="toggleAuto()" id="autoBtn">🤖 Auto: Off</button>
+  </div>
+  <div class="status">
+    <div class="status-card">
+      <div class="song-title" id="songTitle">🌟 Twinkle Twinkle Little Star</div>
+      <div class="hint" id="hint">Learn mode now uses one active note at a time: it falls, lands, and waits for the matching key.</div>
+      <div class="song-picker-panel" id="songPickerPanel">
+        <select class="song-select" id="songSelect"></select>
+        <button class="btn primary" onclick="applySelectedSong()">Use Song</button>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+  </div>
+  <div class="playfield">
+    <div class="note-area" id="noteArea">
+      <div class="white-lanes" id="whiteLanes"></div>
+      <div class="black-lanes" id="blackLanes"></div>
+      <div class="target-line"></div>
+    </div>
+    <div class="piano-shell">
+      <div class="brand-row"></div>
+      <div class="keyboard" id="keyboard">
+        <div class="white-keys" id="whiteKeys"></div>
+        <div class="black-keys" id="blackKeys"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+let audioPrimed = false;
+async function ensureAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  if (!audioPrimed) {
+    const buffer = audioCtx.createBuffer(1, 1, 22050);
+    const source = audioCtx.createBufferSource();
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.0001;
+    source.buffer = buffer;
+    source.connect(gain).connect(audioCtx.destination);
+    source.start(0);
+    audioPrimed = true;
+  }
+}
+const NOTES = [
+  { name: 'C', label: 'Do', freq: 261.63, color: '#ff5f8e', type: 'white', whiteIndex: 0 },
+  { name: 'C#', label: 'Do#', freq: 277.18, color: '#8a62ff', type: 'black', afterWhite: 0 },
+  { name: 'D', label: 'Re', freq: 293.66, color: '#ff944b', type: 'white', whiteIndex: 1 },
+  { name: 'D#', label: 'Re#', freq: 311.13, color: '#5577ff', type: 'black', afterWhite: 1 },
+  { name: 'E', label: 'Mi', freq: 329.63, color: '#ffd34e', type: 'white', whiteIndex: 2 },
+  { name: 'F', label: 'Fa', freq: 349.23, color: '#60d96b', type: 'white', whiteIndex: 3 },
+  { name: 'F#', label: 'Fa#', freq: 369.99, color: '#23c7c8', type: 'black', afterWhite: 3 },
+  { name: 'G', label: 'Sol', freq: 392.00, color: '#47b7ff', type: 'white', whiteIndex: 4 },
+  { name: 'G#', label: 'Sol#', freq: 415.30, color: '#4a6bff', type: 'black', afterWhite: 4 },
+  { name: 'A', label: 'La', freq: 440.00, color: '#a16dff', type: 'white', whiteIndex: 5 },
+  { name: 'A#', label: 'La#', freq: 466.16, color: '#cf4fff', type: 'black', afterWhite: 5 },
+  { name: 'B', label: 'Si', freq: 493.88, color: '#ff67b4', type: 'white', whiteIndex: 6 },
+  { name: 'C2', label: 'Do2', freq: 523.25, color: '#ff7b5d', type: 'white', whiteIndex: 7 }
+];
+const WHITE_ORDER = [0,2,4,5,7,9,11,12];
+const BLACK_ORDER = [1,3,6,8,10];
+const SONGS = [
+  { title: '🌟 Twinkle Twinkle Little Star', notes: [0,0,7,7,9,9,7,5,5,4,4,2,2,0] },
+  { title: '🚌 Wheels of the Bus', notes: [7,9,11,11,9,7,5,0,5,7,7,5,5] },
+  { title: '💖 Love Story', notes: [9,11,12,11,9,7,9,11,12,11,9,7] },
+  { title: '🎶 Wind of Change', notes: [7,9,11,12,11,9,7,5,7,9,7,5,4] },
+  { title: '🇮🇹 Un Italiano Vero', notes: [7,7,9,11,9,7,5,7,9,11,12,11,9] },
+  { title: '❤️ You and I', notes: [4,5,7,9,7,5,4,2,4,5,7,5,4] },
+  { title: '🐉 Game of Thrones Theme', notes: [0,5,7,9,7,5,0,5,7,9,7,5,4,2] },
+  { title: '🐌 Melc Melc Codobelc', notes: [0,2,4,5,4,2,0,2,4,5,7,5,4,2,0] },
+  { title: '🎼 The IX Symphony', notes: [4,4,5,7,7,5,4,2,0,0,2,4,4,2,2] },
+  { title: '🎹 Für Elise', notes: [11,10,11,10,11,7,9,5,0,4,7,9] },
+  { title: '🎓 Gaudeamus Igitur', notes: [7,7,9,11,9,7,5,7,9,7,5,4,2,0] },
+  { title: '🇫🇷 La Marseillaise', notes: [7,7,9,11,11,9,7,4,7,7,9,11,9,7] },
+  { title: '🇷🇴 Deșteaptă-te, române!', notes: [7,9,11,12,11,9,7,5,7,9,11,9,7,5] },
+  { title: '🤘 Metallica', notes: [0,0,7,0,0,7,9,7,5,4,5,7,0] },
+  { title: '🌹 Guns N\' Roses', notes: [7,9,11,9,7,4,7,9,11,12,11,9,7] },
+  { title: '🦆 Dansul Răței', notes: [0,2,4,0,0,2,4,0,4,5,7,4,5,7] },
+  { title: '🎂 Happy Birthday', notes: [0,0,2,0,5,4,0,0,2,0,7,5,0,0,12,9,5,4,2] },
+  { title: '🏆 The Winner Takes It All', notes: [5,7,9,7,5,4,2,4,5,7,9,11,9,7,5] }
+];
+const HIT_LINE_OFFSET = 34;
+const NOTE_HEIGHT = 44;
+const FALL_SPEED = 720;
+let mode = 'song';
+let autoPlay = false;
+let songRunning = false;
+let currentSongIndex = 0;
+let progressIndex = 0;
+let missFlash = false;
+let lastTs = 0;
+let songTimeout = null;
+let activeNote = null;
+
+function currentSong() { return SONGS[currentSongIndex]; }
+
+function renderSongPicker() {
+  const select = document.getElementById('songSelect');
+  if (!select) return;
+  select.innerHTML = SONGS.map((song, idx) => `<option value="${idx}" ${idx === currentSongIndex ? 'selected' : ''}>${song.title}</option>`).join('');
+}
+
+function updateSongTitle() {
+  document.getElementById('songTitle').textContent = currentSong().title;
+}
+
+function toggleSongPicker() {
+  const panel = document.getElementById('songPickerPanel');
+  panel.classList.toggle('show');
+}
+
+function applySelectedSong() {
+  const select = document.getElementById('songSelect');
+  currentSongIndex = Number(select.value || 0);
+  updateSongTitle();
+  renderProgress();
+  document.getElementById('songPickerPanel').classList.remove('show');
+  document.getElementById('hint').textContent = `${currentSong().title} selected. Starting learn mode...`;
+  setMode('song');
+  startSong();
+}
+
+function buildPianoAndLanes() {
+  const whiteKeys = document.getElementById('whiteKeys');
+  const blackKeys = document.getElementById('blackKeys');
+  const whiteLanes = document.getElementById('whiteLanes');
+  const blackLanes = document.getElementById('blackLanes');
+  whiteKeys.innerHTML = ''; blackKeys.innerHTML = ''; whiteLanes.innerHTML = ''; blackLanes.innerHTML = '';
+  WHITE_ORDER.forEach(noteIndex => {
+    const note = NOTES[noteIndex];
+    const lane = document.createElement('div'); lane.className = 'lane white-lane'; lane.dataset.noteIndex = noteIndex; whiteLanes.appendChild(lane);
+    const key = document.createElement('button'); key.className = 'white-key'; key.dataset.noteIndex = noteIndex; key.innerHTML = `<span class="key-label">${note.label}</span>`;
+    key.addEventListener('pointerdown', e => { e.preventDefault(); handleInput(noteIndex); });
+    key.addEventListener('touchstart', e => { e.preventDefault(); handleInput(noteIndex); }, { passive: false });
+    whiteKeys.appendChild(key);
+  });
+  requestAnimationFrame(() => {
+    const whiteKeyEls = [...document.querySelectorAll('.white-key')];
+    BLACK_ORDER.forEach(noteIndex => {
+      const note = NOTES[noteIndex];
+      const leftKey = whiteKeyEls[note.afterWhite];
+      const rightKey = whiteKeyEls[note.afterWhite + 1];
+      if (!leftKey || !rightKey) return;
+      const keyboardRect = document.getElementById('keyboard').getBoundingClientRect();
+      const leftRect = leftKey.getBoundingClientRect();
+      const rightRect = rightKey.getBoundingClientRect();
+      const centerPx = ((leftRect.right + rightRect.left) / 2) - keyboardRect.left;
+      const centerPercent = centerPx / keyboardRect.width * 100;
+      const lane = document.createElement('div'); lane.className = 'lane black-lane'; lane.dataset.noteIndex = noteIndex; lane.style.left = `${centerPercent}%`; blackLanes.appendChild(lane);
+      const key = document.createElement('button'); key.className = 'black-key'; key.dataset.noteIndex = noteIndex; key.style.left = `${centerPercent}%`; key.innerHTML = `<span class="key-label">${note.label}</span>`;
+      key.addEventListener('pointerdown', e => { e.preventDefault(); handleInput(noteIndex); });
+      key.addEventListener('touchstart', e => { e.preventDefault(); handleInput(noteIndex); }, { passive: false });
+      blackKeys.appendChild(key);
+    });
+  });
+}
+function renderProgress() {
+  const el = document.getElementById('progress'); el.innerHTML = '';
+  currentSong().notes.forEach((noteIndex, idx) => {
+    const pill = document.createElement('div'); pill.className = 'pill';
+    if (idx < progressIndex) pill.classList.add('done');
+    if (idx === progressIndex) pill.classList.add('current');
+    if (missFlash && idx === progressIndex) pill.classList.add('miss');
+    pill.textContent = NOTES[noteIndex].label; el.appendChild(pill);
+  });
+}
+function setMode(next) {
+  mode = next;
+  document.getElementById('mode-song').classList.toggle('active', next === 'song');
+  document.getElementById('mode-free').classList.toggle('active', next === 'free');
+  stopSong();
+  document.getElementById('hint').textContent = next === 'free' ? 'Free play mode. Tap any piano key.' : 'Learn mode uses one active note at a time: it falls, lands, and waits for the matching key.';
+}
+function toggleAuto() {
+  autoPlay = !autoPlay;
+  document.getElementById('autoBtn').textContent = `🤖 Auto: ${autoPlay ? 'On' : 'Off'}`;
+}
+function laneFor(noteIndex) { return document.querySelector(`.lane[data-note-index="${noteIndex}"]`); }
+function targetYForLane(lane) { return lane.clientHeight - HIT_LINE_OFFSET - NOTE_HEIGHT / 2; }
+function startSong() {
+  if (mode !== 'song') setMode('song');
+  stopSong();
+  songRunning = true;
+  progressIndex = 0;
+  renderProgress();
+  updateSongTitle();
+  document.getElementById('hint').textContent = `${currentSong().title} started. One note at a time.`;
+  spawnCurrentSongNote();
+}
+function stopSong() {
+  songRunning = false;
+  if (songTimeout) { clearTimeout(songTimeout); songTimeout = null; }
+  if (activeNote?.el) activeNote.el.remove();
+  activeNote = null;
+  clearHighlights();
+}
+function spawnCurrentSongNote() {
+  if (!songRunning || progressIndex >= currentSong().notes.length || activeNote) return;
+  const noteIndex = currentSong().notes[progressIndex];
+  const lane = laneFor(noteIndex); if (!lane) return;
+  const note = NOTES[noteIndex];
+  const el = document.createElement('div');
+  el.className = 'falling-note';
+  el.style.background = `linear-gradient(180deg, ${shade(note.color, 14)}, ${note.color})`;
+  el.textContent = note.label;
+  lane.appendChild(el);
+  activeNote = { noteIndex, lane, el, y: -NOTE_HEIGHT - 8, waiting: false, hit: false };
+}
+function completeActiveNote() {
+  if (!activeNote) return;
+  activeNote.hit = true;
+  activeNote.el.remove();
+  activeNote = null;
+  progressIndex += 1;
+  renderProgress();
+  if (progressIndex >= currentSong().notes.length) {
+    document.getElementById('hint').textContent = 'Nice. Song finished. Restarting learn mode...';
+    celebrate();
+    songRunning = false;
+    songTimeout = setTimeout(() => {
+      songTimeout = null;
+      if (mode === 'song') startSong();
+    }, 1200);
+  } else {
+    document.getElementById('hint').textContent = `Good. Next: ${NOTES[currentSong().notes[progressIndex]].label}`;
+    songTimeout = setTimeout(() => { songTimeout = null; spawnCurrentSongNote(); }, 220);
+  }
+}
+
+async function handleInput(noteIndex) {
+  await ensureAudio();
+  setTimeout(() => playTone(NOTES[noteIndex].freq), 0);
+  pressKey(noteIndex);
+  if (mode === 'free') return;
+  if (activeNote && activeNote.noteIndex === noteIndex) {
+    completeActiveNote();
+  } else if (songRunning) {
+    missFlash = true;
+    renderProgress();
+    document.getElementById('hint').textContent = activeNote ? `Wrong key. Press ${NOTES[activeNote.noteIndex].label}.` : 'No active note yet.';
+    setTimeout(() => { missFlash = false; renderProgress(); }, 220);
+  }
+}
+function pressKey(noteIndex) {
+  const key = document.querySelector(`[data-note-index="${noteIndex}"].white-key, [data-note-index="${noteIndex}"].black-key`);
+  if (!key) return;
+  key.classList.add('pressed');
+  spawnSpark(key, noteIndex);
+  setTimeout(() => key.classList.remove('pressed'), 110);
+}
+function clearHighlights() { document.querySelectorAll('.white-key,.black-key').forEach(k => k.classList.remove('active-window')); }
+function updateHighlight() {
+  clearHighlights();
+  if (activeNote) {
+    const key = document.querySelector(`[data-note-index="${activeNote.noteIndex}"].white-key, [data-note-index="${activeNote.noteIndex}"].black-key`);
+    if (key) key.classList.add('active-window');
+    if (activeNote.waiting) activeNote.el.classList.add('waiting');
+    else activeNote.el.classList.remove('waiting');
+  }
+}
+function spawnSpark(keyEl, noteIndex) {
+  const rect = keyEl.getBoundingClientRect();
+  const s = document.createElement('div'); s.className = 'spark'; s.textContent = '✨'; s.style.left = `${rect.left + rect.width / 2 - 8}px`; s.style.top = `${rect.top + 8}px`; s.style.color = NOTES[noteIndex].color;
+  document.body.appendChild(s); setTimeout(() => s.remove(), 850);
+}
+function celebrate() {
+  for (let i = 0; i < 16; i++) {
+    setTimeout(() => {
+      const s = document.createElement('div'); s.className = 'spark'; s.textContent = ['✨','🌟','🎉','🎵'][Math.floor(Math.random() * 4)];
+      s.style.left = `${Math.random() * window.innerWidth}px`; s.style.top = `${window.innerHeight * 0.45 + Math.random() * 80}px`;
+      s.style.color = ['#ffd84d','#ff7ea6','#7fe1ff','#9ce68e'][Math.floor(Math.random() * 4)];
+      document.body.appendChild(s); setTimeout(() => s.remove(), 850);
+    }, i * 60);
+  }
+}
+function playTone(freq, duration = 1.26) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const o1 = audioCtx.createOscillator(), o2 = audioCtx.createOscillator(), g1 = audioCtx.createGain(), g2 = audioCtx.createGain();
+  o1.type = 'triangle'; o1.frequency.setValueAtTime(freq, now); g1.gain.setValueAtTime(.0001, now); g1.gain.exponentialRampToValueAtTime(.23, now + .02); g1.gain.exponentialRampToValueAtTime(.0001, now + duration);
+  o2.type = 'sine'; o2.frequency.setValueAtTime(freq * 2, now); g2.gain.setValueAtTime(.11, now); g2.gain.exponentialRampToValueAtTime(.0001, now + duration * .65);
+  o1.connect(g1).connect(audioCtx.destination); o2.connect(g2).connect(audioCtx.destination); o1.start(now); o2.start(now); o1.stop(now + duration + .05); o2.stop(now + duration + .05);
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) + amt, g = ((n >> 8) & 255) + amt, b = (n & 255) + amt;
+  r = Math.max(0, Math.min(255, r)); g = Math.max(0, Math.min(255, g)); b = Math.max(0, Math.min(255, b));
+  return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+}
+function animate(ts) {
+  if (!lastTs) lastTs = ts;
+  const dt = (ts - lastTs) / 1000;
+  lastTs = ts;
+  if (activeNote && !activeNote.hit) {
+    if (!activeNote.waiting) {
+      activeNote.y += FALL_SPEED * dt;
+      const targetY = targetYForLane(activeNote.lane);
+      if (activeNote.y >= targetY) {
+        activeNote.y = targetY;
+        activeNote.waiting = true;
+        document.getElementById('hint').textContent = `Press ${NOTES[activeNote.noteIndex].label} now.`;
+        if (autoPlay) {
+          setTimeout(() => { if (activeNote && activeNote.waiting) handleInput(activeNote.noteIndex); }, 180);
+        }
+      }
+      activeNote.el.style.top = `${activeNote.y}px`;
+    } else {
+      activeNote.el.style.top = `${activeNote.y}px`;
+    }
+  }
+  updateHighlight();
+  requestAnimationFrame(animate);
+}
+const KEY_MAP = { a:0, w:1, s:2, e:3, d:4, f:5, t:6, g:7, y:8, h:9, u:10, j:11, k:12, '1':0, '2':2, '3':4, '4':5, '5':7, '6':9, '7':11, '8':12 };
+document.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const idx = KEY_MAP[e.key.toLowerCase()];
+  if (idx !== undefined) handleInput(idx);
+  if (e.code === 'Space') { e.preventDefault(); songRunning ? stopSong() : startSong(); }
+});
+window.addEventListener('resize', () => { buildPianoAndLanes(); });
+buildPianoAndLanes(); renderProgress(); requestAnimationFrame(animate);
+renderSongPicker(); updateSongTitle();
+setTimeout(() => {
+  if (!songRunning && mode === 'song') startSong();
+}, 250);
+</script>
+</body>
+</html>
