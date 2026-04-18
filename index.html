@@ -40,6 +40,7 @@ body { background: linear-gradient(180deg, #7ed8ff 0%, #92b7ff 40%, #a881ff 100%
 .status-card { background: rgba(255,255,255,.84); border: 3px solid rgba(255,255,255,.6); border-radius: 24px; box-shadow: 0 10px 24px rgba(66,50,134,.14); width: min(980px, calc(100vw - 24px)); padding: 12px 16px; }
 .song-title { font-weight: 900; color: #493c91; font-size: clamp(1rem, 2.3vw, 1.2rem); }
 .hint { margin-top: 6px; color: #39506d; font-weight: 700; min-height: 1.4em; }
+.verse-display { margin-top: 10px; padding: 10px 14px; border-radius: 16px; background: rgba(255,255,255,.75); color: #3f338d; font-weight: 900; min-height: 1.4em; }
 .progress { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .pill { min-width: 38px; height: 38px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; background: #edf4ff; border: 2px solid #d7e8ff; color: #5243a0; }
 .pill.done { background: #9be88e; border-color: #59c76a; color: #245f30; }
@@ -108,6 +109,7 @@ body { background: linear-gradient(180deg, #7ed8ff 0%, #92b7ff 40%, #a881ff 100%
     <div class="status-card">
       <div class="song-title" id="songTitle">🌟 Twinkle Twinkle Little Star</div>
       <div class="hint" id="hint">Learn mode now uses one active note at a time: it falls, lands, and waits for the matching key.</div>
+      <div class="verse-display" id="verseDisplay">Current verse: Twinkle, twinkle, little star</div>
       <div class="song-picker-panel" id="songPickerPanel">
         <select class="song-select" id="songSelect" size="8" onchange="applySelectedSong()"></select>
       </div>
@@ -165,24 +167,24 @@ const NOTES = [
 const WHITE_ORDER = [0,2,4,5,7,9,11,12];
 const BLACK_ORDER = [1,3,6,8,10];
 const SONGS = [
-  { title: '🌟 Twinkle Twinkle Little Star', notes: [0,0,7,7,9,9,7,5,5,4,4,2,2,0] },
-  { title: '🚌 Wheels of the Bus', notes: [7,0,0,0,0,4,7,4,0,2,11,7,4,2,0,7,0,0,0,0,4,7,4,0,2,7,7,0] },
-  { title: '💖 Love Story', notes: [9,11,12,11,9,7,9,11,12,11,9,7,5,7,9] },
-  { title: '🎶 Wind of Change', notes: [4,7,9,11,9,7,4,7,9,11,12,11,9,7] },
-  { title: '🇮🇹 Un Italiano Vero', notes: [7,7,9,11,12,11,9,7,5,7,9,11,9,7,5] },
-  { title: '❤️ You and I', notes: [7,9,11,9,7,5,4,5,7,9,11,9,7] },
-  { title: '🐉 Game of Thrones Theme', notes: [0,5,7,9,7,5,0,5,7,9,7,5,4,2] },
-  { title: '🐌 Melc Melc Codobelc', notes: [0,2,4,5,4,2,0,0,2,4,5,7,5,4,2,0] },
-  { title: '🎼 The IX Symphony', notes: [4,4,5,7,7,5,4,2,0,0,2,4,4,2,2] },
-  { title: '🎹 Für Elise', notes: [11,10,11,10,11,7,9,5,0,4,7,9,11,7,10,11] },
-  { title: '🎓 Gaudeamus Igitur', notes: [7,7,9,11,9,7,5,7,9,11,9,7,5,4,2,0] },
-  { title: '🇫🇷 La Marseillaise', notes: [7,7,9,11,11,9,7,4,7,7,9,11,9,7,5] },
-  { title: '🇷🇴 Deșteaptă-te, române!', notes: [7,7,9,11,12,11,9,7,5,7,9,11,9,7,5] },
-  { title: '🤘 Metallica', notes: [11,10,11,10,11,7,4,4,4,7,11,10,11,10,11] },
-  { title: '🌹 Guns N\' Roses', notes: [9,9,7,5,7,9,11,9,7,5,4,5,7,9] },
-  { title: '🦆 Dansul Răței', notes: [0,2,4,0,0,2,4,0,4,5,7,4,5,7] },
-  { title: '🎂 Happy Birthday', notes: [0,0,2,0,5,4,0,0,2,0,7,5,0,0,12,9,5,4,2] },
-  { title: '🏆 The Winner Takes It All', notes: [9,9,11,12,11,9,7,9,11,12,11,9,7,5,4] }
+  { title: '🌟 Twinkle Twinkle Little Star', notes: [0,0,7,7,9,9,7,5,5,4,4,2,2,0], verses: ['Twinkle, twinkle, little star', 'How I wonder what you are'] },
+  { title: '🚌 Wheels of the Bus', notes: [7,0,0,0,0,4,7,4,0,2,11,7,4,2,0,7,0,0,0,0,4,7,4,0,2,7,7,0], verses: ['The wheels on the bus go round and round', 'All through the town'] },
+  { title: '💖 Love Story', notes: [9,11,12,11,9,7,9,11,12,11,9,7,5,7,9], verses: ['Where do I begin', 'To tell the story of how great a love can be'] },
+  { title: '🎶 Wind of Change', notes: [4,7,9,11,9,7,4,7,9,11,12,11,9,7], verses: ['Take me to the magic of the moment', 'On a glory night'] },
+  { title: '🇮🇹 Un Italiano Vero', notes: [7,7,9,11,12,11,9,7,5,7,9,11,9,7,5], verses: ['Lasciatemi cantare', 'Con la chitarra in mano'] },
+  { title: '❤️ You and I', notes: [7,9,11,9,7,5,4,5,7,9,11,9,7], verses: ['You and I', 'Holding on to each other'] },
+  { title: '🐉 Game of Thrones Theme', notes: [0,5,7,9,7,5,0,5,7,9,7,5,4,2], verses: ['Main theme', 'Winter is coming'] },
+  { title: '🐌 Melc Melc Codobelc', notes: [0,2,4,5,4,2,0,0,2,4,5,7,5,4,2,0], verses: ['Melc, melc, codobelc', 'Scoate coarne bourești'] },
+  { title: '🎼 The IX Symphony', notes: [4,4,5,7,7,5,4,2,0,0,2,4,4,2,2], verses: ['Ode to Joy', 'Joyful, joyful tune'] },
+  { title: '🎹 Für Elise', notes: [11,10,11,10,11,7,9,5,0,4,7,9,11,7,10,11], verses: ['Für Elise motif', 'Main opening phrase'] },
+  { title: '🎓 Gaudeamus Igitur', notes: [7,7,9,11,9,7,5,7,9,11,9,7,5,4,2,0], verses: ['Gaudeamus igitur', 'Juvenes dum sumus'] },
+  { title: '🇫🇷 La Marseillaise', notes: [7,7,9,11,11,9,7,4,7,7,9,11,9,7,5], verses: ['Allons enfants de la Patrie', 'Le jour de gloire est arrivé'] },
+  { title: '🇷🇴 Deșteaptă-te, române!', notes: [7,7,9,11,12,11,9,7,5,7,9,11,9,7,5], verses: ['Deșteaptă-te, române', 'Din somnul cel de moarte'] },
+  { title: '🤘 Metallica', notes: [11,10,11,10,11,7,4,4,4,7,11,10,11,10,11], verses: ['Nothing Else Matters', 'So close, no matter how far'] },
+  { title: '🌹 Guns N\' Roses', notes: [9,9,7,5,7,9,11,9,7,5,4,5,7,9], verses: ['Don\'t Cry', 'Talk to me softly'] },
+  { title: '🦆 Dansul Răței', notes: [0,2,4,0,0,2,4,0,4,5,7,4,5,7], verses: ['Dansul răței', 'Hai să facem toți la fel'] },
+  { title: '🎂 Happy Birthday', notes: [0,0,2,0,5,4,0,0,2,0,7,5,0,0,12,9,5,4,2], verses: ['Happy birthday to you', 'Happy birthday dear friend'] },
+  { title: '🏆 The Winner Takes It All', notes: [9,9,11,12,11,9,7,9,11,12,11,9,7,5,4], verses: ['The winner takes it all', 'The loser standing small'] }
 ];
 const HIT_LINE_OFFSET = 34;
 const NOTE_HEIGHT = 44;
@@ -208,6 +210,20 @@ function renderSongPicker() {
 
 function updateSongTitle() {
   document.getElementById('songTitle').textContent = currentSong().title;
+  updateVerseDisplay();
+}
+
+function updateVerseDisplay() {
+  const verseEl = document.getElementById('verseDisplay');
+  const song = currentSong();
+  if (!verseEl) return;
+  if (!song.verses || !song.verses.length) {
+    verseEl.textContent = `Current verse: ${song.title}`;
+    return;
+  }
+  const segmentSize = Math.max(1, Math.ceil(song.notes.length / song.verses.length));
+  const verseIndex = Math.min(song.verses.length - 1, Math.floor(progressIndex / segmentSize));
+  verseEl.textContent = `Current verse: ${song.verses[verseIndex]}`;
 }
 
 function openSongPicker() {
@@ -271,6 +287,7 @@ function renderProgress() {
     if (missFlash && idx === progressIndex) pill.classList.add('miss');
     pill.textContent = NOTES[noteIndex].label; el.appendChild(pill);
   });
+  updateVerseDisplay();
 }
 function setMode(next) {
   mode = next;
