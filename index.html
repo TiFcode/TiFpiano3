@@ -70,11 +70,24 @@ body { background: linear-gradient(180deg, #7ed8ff 0%, #92b7ff 40%, #a881ff 100%
 .black-key.pressed { transform: translateX(-50%) translateY(3px); }
 .key-label { font-size: clamp(.68rem, 1.6vw, .9rem); font-weight: 900; user-select: none; }
 .spark { position: fixed; pointer-events: none; z-index: 30; font-size: 1.3rem; animation: fly 850ms ease-out forwards; }
+.audio-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(34, 28, 78, 0.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.audio-overlay.hidden { display: none; }
+.audio-card { width: min(92vw, 520px); background: rgba(255,255,255,.96); border-radius: 28px; padding: 28px 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,.2); }
+.audio-card h2 { color: #3f338d; font-size: clamp(1.4rem, 4vw, 2rem); margin-bottom: 10px; }
+.audio-card p { color: #42536f; font-weight: 700; margin-bottom: 18px; line-height: 1.4; }
+.audio-init-btn { border: none; border-radius: 20px; padding: 18px 20px; width: 100%; background: linear-gradient(180deg, #4fe36f 0%, #20b94b 100%); color: white; font-weight: 900; font-size: clamp(1rem, 3vw, 1.25rem); box-shadow: 0 10px 22px rgba(32,185,75,.35); cursor: pointer; }
 @keyframes fly { 0% { opacity: 1; transform: translateY(0) scale(.8) rotate(0deg); } 100% { opacity: 0; transform: translateY(-76px) scale(1.35) rotate(16deg); } }
 @media (max-width: 760px) { .playfield { width: calc(100vw - 8px); } .status-card { width: 100%; } .note-area { border-radius: 22px 22px 12px 12px; } .keyboard { height: min(26vh, 190px); } }
 </style>
 </head>
 <body>
+<div class="audio-overlay" id="audioOverlay">
+  <div class="audio-card">
+    <h2>🔊 Audio Setup</h2>
+    <p>Tap the big green button, initialize audio, then Twinkle Twinkle starts automatically.</p>
+    <button class="audio-init-btn" onclick="initializeAudioAndStart()">PRESS THIS BUTTON TO INITIALIZE AUDIO</button>
+  </div>
+</div>
 <div class="scene">
   <div class="cloud c1"></div>
   <div class="cloud c2"></div>
@@ -183,6 +196,7 @@ let missFlash = false;
 let lastTs = 0;
 let songTimeout = null;
 let activeNote = null;
+let audioReady = false;
 
 function currentSong() { return SONGS[currentSongIndex]; }
 
@@ -320,6 +334,7 @@ function completeActiveNote() {
 }
 
 async function handleInput(noteIndex) {
+  if (!audioReady) return;
   await ensureAudio();
   setTimeout(() => playTone(NOTES[noteIndex].freq), 0);
   pressKey(noteIndex);
@@ -332,6 +347,19 @@ async function handleInput(noteIndex) {
     document.getElementById('hint').textContent = activeNote ? `Wrong key. Press ${NOTES[activeNote.noteIndex].label}.` : 'No active note yet.';
     setTimeout(() => { missFlash = false; renderProgress(); }, 220);
   }
+}
+async function initializeAudioAndStart() {
+  await ensureAudio();
+  audioReady = true;
+  document.getElementById('audioOverlay').classList.add('hidden');
+  currentSongIndex = 0;
+  renderSongPicker();
+  updateSongTitle();
+  mode = 'song';
+  document.getElementById('mode-song').classList.add('active');
+  document.getElementById('mode-free').classList.remove('active');
+  document.getElementById('hint').textContent = 'Twinkle Twinkle starts now.';
+  startSong();
 }
 function pressKey(noteIndex) {
   const key = document.querySelector(`[data-note-index="${noteIndex}"].white-key, [data-note-index="${noteIndex}"].black-key`);
@@ -413,9 +441,6 @@ document.addEventListener('keydown', e => {
 window.addEventListener('resize', () => { buildPianoAndLanes(); });
 buildPianoAndLanes(); renderProgress(); requestAnimationFrame(animate);
 renderSongPicker(); updateSongTitle();
-setTimeout(() => {
-  if (!songRunning && mode === 'song') startSong();
-}, 250);
 </script>
 </body>
 </html>
