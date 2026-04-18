@@ -23,6 +23,7 @@ body { background: linear-gradient(180deg, #7ed8ff 0%, #92b7ff 40%, #a881ff 100%
 .controls { position: relative; z-index: 5; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 8px 12px 8px; }
 .btn { border: none; border-radius: 999px; padding: 11px 16px; font-weight: 900; background: rgba(255,255,255,.92); color: #5c3c90; box-shadow: 0 4px 12px rgba(0,0,0,.08); cursor: pointer; }
 .btn.primary, .btn.active { background: linear-gradient(135deg, #ffc64d, #ff81aa); color: white; }
+.btn.song-pick-btn { background: linear-gradient(180deg, #4ff06f 0%, #16b93f 100%); color: white; box-shadow: 0 0 0 5px rgba(73,230,108,.28), 0 10px 24px rgba(22,185,63,.42); }
 .song-picker-panel { margin-top: 10px; display: none; gap: 8px; flex-wrap: wrap; align-items: center; }
 .song-picker-panel.show { display: flex; }
 .song-select {
@@ -98,7 +99,7 @@ body { background: linear-gradient(180deg, #7ed8ff 0%, #92b7ff 40%, #a881ff 100%
   <div class="controls">
     <button class="btn active" id="mode-song" onclick="setMode('song')">🌟 Learn Song</button>
     <button class="btn" id="mode-free" onclick="setMode('free')">🎵 Free Play</button>
-    <button class="btn" onclick="toggleSongPicker()">🎼 Select Song</button>
+    <button class="btn song-pick-btn" onclick="openSongPicker()">🎼 Select Song</button>
     <button class="btn primary" onclick="startSong()">▶️ Start</button>
     <button class="btn" onclick="stopSong()">⏹️ Stop</button>
     <button class="btn" onclick="toggleAuto()" id="autoBtn">🤖 Auto: Off</button>
@@ -108,8 +109,7 @@ body { background: linear-gradient(180deg, #7ed8ff 0%, #92b7ff 40%, #a881ff 100%
       <div class="song-title" id="songTitle">🌟 Twinkle Twinkle Little Star</div>
       <div class="hint" id="hint">Learn mode now uses one active note at a time: it falls, lands, and waits for the matching key.</div>
       <div class="song-picker-panel" id="songPickerPanel">
-        <select class="song-select" id="songSelect"></select>
-        <button class="btn primary" onclick="applySelectedSong()">Use Song</button>
+        <select class="song-select" id="songSelect" size="8" onchange="applySelectedSong()"></select>
       </div>
       <div class="progress" id="progress"></div>
     </div>
@@ -210,9 +210,11 @@ function updateSongTitle() {
   document.getElementById('songTitle').textContent = currentSong().title;
 }
 
-function toggleSongPicker() {
+function openSongPicker() {
   const panel = document.getElementById('songPickerPanel');
-  panel.classList.toggle('show');
+  panel.classList.add('show');
+  const select = document.getElementById('songSelect');
+  if (select) select.focus();
 }
 
 function applySelectedSong() {
